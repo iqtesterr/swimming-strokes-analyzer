@@ -21,6 +21,11 @@ LOG_FIELDS = [
 
 # Model Architectures
 def train_classifier_1():
+    """
+    1. epochs = 50, batch = 1
+    2. epochs = 100, batch = 1
+    3. epochs = 50, batch = 4
+    """
     return keras.Sequential([
         keras.layers.Input(shape=(768,)),
         keras.layers.Dense(4, activation="softmax"),
@@ -28,6 +33,11 @@ def train_classifier_1():
 
 
 def train_classifier_2():
+    """
+    1. epochs = 50, batch = 1
+    2. epochs = 100, batch = 4
+    3. epochs = 76, batch = 4
+    """
     return keras.Sequential([
         keras.layers.Input(shape=(768,)),
         keras.layers.Dense(64, activation="relu"),
@@ -36,6 +46,11 @@ def train_classifier_2():
 
 
 def train_classifier_3():
+    """
+    1. epochs = 100, batch = 1
+    2. epochs = 100, batch = 4
+    3. epochs = 100, batch = 2
+    """
     return keras.Sequential([
         keras.layers.Input(shape=(768,)),
         keras.layers.Dense(128, activation="relu"),
@@ -44,11 +59,42 @@ def train_classifier_3():
     ])
 
 def train_classifier_4():
+    """
+    1. epochs = 100, batch = 1
+    2. epochs = 100, batch = 4
+    """
     return keras.Sequential([
-        keras.layers.Input(shape=(1, 16, 768)),
-        keras.layers.Conv1D(64, 3, activation="relu"),
-        keras.layers.Dense(128, activation="relu"),
-        keras.layers.Dense(64, activation="relu"),
+        keras.layers.Input(shape=(16, 768)),
+        keras.layers.Conv1D(64, 4, activation="relu"),
+        keras.layers.GlobalAveragePooling1D(),
+        keras.layers.Dense(4, activation="softmax"),
+    ])
+
+def train_classifier_5():
+    """
+    1. epochs = 100, batch = 1
+    2. epochs = 100, batch = 3
+    3. epochs = 100, batch = 2
+    """
+    return keras.Sequential([
+        keras.layers.Input(shape=(16, 768)),
+        keras.layers.Conv1D(64, kernel_size=4),
+        keras.layers.LeakyReLU(),
+        keras.layers.GlobalAveragePooling1D(),
+        keras.layers.Dense(4, activation="softmax"),
+    ])
+
+def train_classifier_6():
+    """
+    1. epochs = 100, batch = 1
+    """
+    return keras.Sequential([
+        keras.layers.Input(shape=(16, 768)),
+        keras.layers.Conv1D(64, kernel_size=4),
+        keras.layers.LeakyReLU(),
+        keras.layers.GlobalAveragePooling1D(),
+        keras.layers.Dense(16),
+        keras.layers.LeakyReLU(),
         keras.layers.Dense(4, activation="softmax"),
     ])
 
@@ -73,7 +119,7 @@ def get_log_paths(architecture_id: str):
 
 
 def start_log(model_architecture: str, optimizer: str, loss: str, batch_size: int, epochs: int):
-    """Create a CSV file and return its path, model path, and hyperparameters."""
+    """Create a CSV file and return its path, model path, and hyperparameters string."""
     csv_path, model_path = get_log_paths(model_architecture.__name__)
     hyperparameters = (
         f"optimizer={optimizer}, "
@@ -104,10 +150,14 @@ def record_epoch(csv_path, hyperparameters, epoch, history, model,
         "hyperparameters": hyperparameters,
     }
     for label, stroke in enumerate(STROKES):
+        # a boolean array aligned with validation labels,
+        # where True represents the actual label is in this class
         actual = y_val == label
         row[f"{stroke}_recall"] = (
+            # the fraction of actual samples of this class that predicted correctly
             float(np.mean(predictions[actual] == label)) if actual.any() else ""
         )
+    # per row per epoch
     with csv_path.open("a", newline="", encoding="utf-8") as file:
         csv.DictWriter(file, fieldnames=LOG_FIELDS).writerow(row)
 
@@ -163,11 +213,13 @@ def show_training_curve(csv_path):
     """Open the accuracy, loss, and recall curves from one experiment CSV."""
     import matplotlib.pyplot as plt
 
+    # load each row as dictionary
     with Path(csv_path).open(newline="", encoding="utf-8") as file:
         rows = list(csv.DictReader(file))
+    # x-axis
     epochs = [int(row["epoch"]) for row in rows]
-
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    # 1 figure with 3 plots
+    figure, axes = plt.subplots(1, 3, figsize=(15, 4))
     for key in ("accuracy", "val_accuracy"):
         axes[0].plot(epochs, [float(row[key]) for row in rows], label=key)
     for key in ("loss", "val_loss"):
@@ -176,30 +228,32 @@ def show_training_curve(csv_path):
         key = f"{stroke}_recall"
         axes[2].plot(epochs, [float(row[key]) for row in rows], label=stroke)
 
-    for axis, title in zip(axes, ("Accuracy", "Loss", "Validation recall")):
+    for axis, title in zip(axes, ("Accuracy", "Loss", "Validation Recall")):
         axis.set_title(title)
         axis.set_xlabel("Epoch")
         axis.legend()
     axes[0].set_ylim(0, 1)
     axes[2].set_ylim(0, 1)
-    fig.tight_layout()
+    figure.tight_layout()
     plt.show()
 
 
 if __name__ == "__main__":
-    #show_training_curve("eval/machine/train_classifier_1/1.csv")
+    #show_training_curve("eval/machine/train_classifier_5/4.csv")
     #sys.exit(0)
 
     video_prism = keras_hub.models.VideoPrismBackbone.from_preset(
         "videoprism_public_v1_base"
     )
     video_prism.trainable = False
-    train_datas = extract_features(video_prism, load_videos("train"))
-    validation_datas = extract_features(video_prism, load_videos("validation"))
+    train_datas = extract_features(video_prism, load_videos("train"), avg_axis=(2,))
+    validation_datas = extract_features(video_prism, load_videos("validation"), avg_axis=(2,))
 
     train(
-        train_classifier_1,
+        train_classifier_5,
         train_datas,
         validation_datas,
         log=True,
+        epochs=53,
+        batch_size=1
     )

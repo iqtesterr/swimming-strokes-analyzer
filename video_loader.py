@@ -17,7 +17,7 @@ def load_videos(split):
     videos = []
 
     for i in range(len(STROKES)):
-        folder = DATA / split / STROKES[i]
+        folder = DATA/split/STROKES[i]
         for path in sorted(folder.glob("*.mp4")):
             videos.append((path, i))
     return videos
