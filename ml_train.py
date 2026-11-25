@@ -1,5 +1,4 @@
 import os
-import sys
 
 # Use my 5080!
 os.environ["KERAS_BACKEND"] = "torch"
@@ -18,6 +17,7 @@ LOG_FIELDS = [
     *(f"{stroke}_recall" for stroke in STROKES),
     "hyperparameters",
 ]
+
 
 # Model Architectures
 def train_classifier_1():
@@ -58,6 +58,7 @@ def train_classifier_3():
         keras.layers.Dense(4, activation="softmax"),
     ])
 
+
 def train_classifier_4():
     """
     1. epochs = 100, batch = 1
@@ -69,6 +70,7 @@ def train_classifier_4():
         keras.layers.GlobalAveragePooling1D(),
         keras.layers.Dense(4, activation="softmax"),
     ])
+
 
 def train_classifier_5():
     """
@@ -84,9 +86,10 @@ def train_classifier_5():
         keras.layers.Dense(4, activation="softmax"),
     ])
 
+
 def train_classifier_6():
     """
-    1. epochs = 100, batch = 1
+    experiment_1. epochs = 100, batch = experiment_1
     """
     return keras.Sequential([
         keras.layers.Input(shape=(16, 768)),
@@ -97,6 +100,7 @@ def train_classifier_6():
         keras.layers.LeakyReLU(),
         keras.layers.Dense(4, activation="softmax"),
     ])
+
 
 # Logs
 def to_input_arrays(examples):
@@ -160,6 +164,7 @@ def record_epoch(csv_path, hyperparameters, epoch, history, model,
     # per row per epoch
     with csv_path.open("a", newline="", encoding="utf-8") as file:
         csv.DictWriter(file, fieldnames=LOG_FIELDS).writerow(row)
+
 
 # Training
 def train(
@@ -239,8 +244,8 @@ def show_training_curve(csv_path):
 
 
 if __name__ == "__main__":
-    #show_training_curve("eval/machine/train_classifier_5/4.csv")
-    #sys.exit(0)
+    # show_training_curve("eval/machine/train_classifier_5/4.csv")
+    # sys.exit(0)
 
     video_prism = keras_hub.models.VideoPrismBackbone.from_preset(
         "videoprism_public_v1_base"

@@ -12,7 +12,7 @@ from video_loader import STROKES, extract_features, load_videos
 def get_ml_eval(model, samples):
     with open('ml_eval.csv', 'w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        csv.DictWriter(file, fieldnames=("example_id", "prediction")).writeheader()
+        writer.writerow(("example_id", "prediction"))
         for key, value in samples.items():
             scores = model.predict(value[None, ...], verbose=0)[0]
             prediction = STROKES[int(scores.argmax())]
@@ -25,7 +25,7 @@ def predict(model, sample):
     print(f'Prediction of {sample[0].name}: {STROKES[scores.argmax()]}')
 
 if __name__ == '__main__':
-    run_test_set = True
+    run_test_set = False
     root = Path(__file__).resolve().parent
     classifier_path = root/"classifier.keras"
     video_prism = keras_hub.models.VideoPrismBackbone.from_preset(

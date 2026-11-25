@@ -16,35 +16,42 @@ def predictions(path, column):
 
 def report(name, guesses, truth):
     # Overall correctness
-    total = len(guesses)
+    total = len(truth)
     correct = 0
-    for key in guesses:
-        if guesses[key] == truth[key]:
+    for key in truth:
+        if guesses.get(key) == truth[key]:
             correct += 1
 
-    print(f'{name}: {correct}/{total} = {correct/total:.1%}')
+    print(f'{name}: {correct}/{total} = {correct/total:.2%}')
 
     # Strokes correctness
     for label in LABELS:
         hits = 0
         count = 0
-        for key in guesses:
+        for key in truth:
             if truth[key] == label:
                 count += 1
-                if guesses[key] == label:
+                if guesses.get(key) == label:
                     hits += 1
-        print(f'  {label}: {hits}/{count}')
-    unknown = sum(label == 'unknown' for label in guesses.values())
-    print(f'  unknown: {unknown}')
+        print(f'  {label} recall: {hits}/{count} = {hits/count:.2%}')
+    invalid = sum(guesses.get(key) not in LABELS for key in truth)
+    print(f'  invalid (including unknown or missing): {invalid}\n')
 
 
 def main():
     truth = predictions(ROOT/'ground_truth.csv', 'label')
     human = predictions(ROOT/'human_eval.csv', 'human_prediction')
     symbolic = predictions(ROOT/'symbolic_eval.csv', 'prediction')
-    report('Human subset', human, truth)
-    report('Symbolic on the same subset', {key: symbolic[key] for key in human}, truth)
+    ml = predictions(ROOT/'ml_eval.csv', 'prediction')
+    llm = predictions(ROOT/'llm_eval.csv', 'prediction')
+    human_truth = {key: truth[key] for key in human}
+    report('Human subset', human, human_truth)
+    report('Symbolic on the same subset', symbolic, human_truth)
     report('Symbolic on the full test set', symbolic, truth)
+    report('ML on the same subset', ml, human_truth)
+    report('ML on the full test set', ml, truth)
+    report('LLM on the same subset', llm, human_truth)
+    report('LLM on the full test set', llm, truth)
 
 
 if __name__ == '__main__':
